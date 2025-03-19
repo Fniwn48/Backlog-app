@@ -956,6 +956,8 @@ def process_backlog_data(backlog, salesUOM, export, Puom, kit, MRP, securoc_df):
     try:
         # Convertir tous les Sales Document en chaînes de caractères
         backlog['Sales Document'] = backlog['Sales Document'].astype(str)
+        backlog = backlog.iloc[1:]
+
 
         # Préparer le fichier Securoc
         securoc_df = securoc_df[['Material', 'Pegged reqmt']]
