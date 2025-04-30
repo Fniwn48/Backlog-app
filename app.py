@@ -1155,7 +1155,7 @@ def main():
         files = {
             "Backlog": st.file_uploader("Fichier Backlog", type=["xlsx"], key="backlog"),
             "Sales UOM": st.file_uploader("Fichier Sales UOM", type=["xlsx"], key="sales"),
-            "Orders": st.file_uploader("Fichier Orders To Suppliers ZMM13", type=["xlsx"], key="orders"),
+            "Orders": st.file_uploader("Fichier Orders To Suppliers ZMM13", type=["xlsx","XLSX"], key="orders"),
             "PUOM": st.file_uploader("Fichier PUOM", type=["xlsx"], key="puom"),
             "Kits": st.file_uploader("Fichier Kits", type=["xlsx"], key="kits"),
             "MRP": st.file_uploader("Fichier MRP", type=["xlsx"], key="mrp"),
