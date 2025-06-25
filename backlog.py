@@ -9,7 +9,7 @@ def check_stock_availability(df, df1, kits_df, securoc_df):
 
         # ✅ Vérification des colonnes essentielles
         required_columns = ['Statut', 'MRP Controller', 'Vendor PO #', 'Y Material',
-                          'Sales Document', 'On Hand Quantity', 'Qte_sales', 'Open Value', 'Created on', 'Type', 'DropShip']
+                          'Sales Document', 'On Hand Qty', 'Qte_sales', 'Open Value', 'Created on', 'Type', 'DropShip']
 
         if not set(required_columns).issubset(df.columns):
             raise ValueError(f"❌ Colonnes manquantes dans df: {set(required_columns) - set(df.columns)}")
@@ -17,7 +17,7 @@ def check_stock_availability(df, df1, kits_df, securoc_df):
         # 🏗️ Création du DataFrame de sortie
         result_df = df.copy()
         result_df['Stock_Status'] = 'x'
-        result_df['Remaining_Quantity'] = result_df['On Hand Quantity']
+        result_df['Remaining_Quantity'] = result_df['On Hand Qty']
         result_df['Sort_Order'] = 0
         result_df['Created on'] = pd.to_datetime(result_df['Created on'], format='%m/%d/%Y', errors='coerce')
 
@@ -114,7 +114,7 @@ def check_stock_availability(df, df1, kits_df, securoc_df):
         for material, group in result_df[non_securoc_mask].groupby('Y Material'):
             temp_group = group.copy()
             sort_order = 1  # Réinitialisation du compteur pour chaque groupe
-            remaining_quantity = temp_group.iloc[0]['On Hand Quantity']
+            remaining_quantity = temp_group.iloc[0]['On Hand Qty']
             temp_group = temp_group.sort_values('Created on', ascending=True)
 
             # Tri par date
