@@ -1001,7 +1001,7 @@ def process_backlog_data(backlog, salesUOM, export, Puom, kit, MRP, securoc_df):
         colonnes = [
             'Created on', 'Sales Document', 'Requested Delivery Date', 'Sales UOM', 'Base UOM',
             'Header Delivery Block', 'Line Delivery Block', 'Y Material', 'MRP Controller',
-            'MRP Group', 'Vendor PO #', 'Open Value', 'Open Order Quantity', 'On Hand Quantity',
+            'MRP Group', 'Vendor PO #', 'Open Value', 'Open Order Quantity', 'On Hand Qty',
             'Delivery Qty - Complete', 'ATP QTY','DropShip'
         ]
         missing_cols = [col for col in colonnes if col not in backlog.columns]
