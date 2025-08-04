@@ -202,6 +202,16 @@ st.markdown(f"""
         flex: 1;
         text-align: center;
     }}
+    
+    /* Style pour le filtre principal */
+    .main-filter {{
+        background-color: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        border-left: 4px solid {COLORS["primary"]};
+        margin-bottom: 30px;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -214,6 +224,74 @@ MOIS_FR = {
 
 def format_currency(value):
     return f"{value:,.2f} €"
+
+def apply_filter(merged_df, filter_type):
+    """
+    Applique le filtre sélectionné sur le DataFrame
+    """
+    if filter_type == "Toutes les commandes":
+        return merged_df
+    
+    elif filter_type == "Commandes avec matériel BUY":
+        # Récupérer les Sales Documents qui contiennent au moins un matériel de type BUY
+        sales_docs_with_buy = merged_df[merged_df['Type'] == 'BUY']['Sales Document'].unique()
+        return merged_df[merged_df['Sales Document'].isin(sales_docs_with_buy)]
+    
+    elif filter_type == "Commandes avec matériel SECUROC":
+        # Récupérer les Sales Documents qui contiennent au moins un matériel de type SECUROC
+        sales_docs_with_securoc = merged_df[merged_df['Type'] == 'SECUROC']['Sales Document'].unique()
+        return merged_df[merged_df['Sales Document'].isin(sales_docs_with_securoc)]
+    
+    elif filter_type == "Commandes avec produit INSTAL (Y5010646)":
+        # Récupérer les Sales Documents qui contiennent le produit Y5010646
+        sales_docs_with_instal = merged_df[merged_df['Y Material'] == 'Y5010646']['Sales Document'].unique()
+        return merged_df[merged_df['Sales Document'].isin(sales_docs_with_instal)]
+    
+    return merged_df
+
+def display_main_filter():
+    """
+    Affiche le filtre principal en haut à gauche de la page
+    """
+    # Créer une colonne plus petite pour le filtre
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:
+        st.markdown("""
+        <div style="
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        ">
+        """, unsafe_allow_html=True)
+        
+        filter_options = [
+            "Toutes les commandes",
+            "Commandes avec matériel BUY", 
+            "Commandes avec matériel SECUROC",
+            "Commandes avec produit INSTAL (Y5010646)"
+        ]
+        
+        # Initialiser le filtre dans session_state s'il n'existe pas
+        if 'main_filter' not in st.session_state:
+            st.session_state.main_filter = filter_options[0]
+        
+        selected_filter = st.selectbox(
+            "Sélectionner le type de commandes",
+            filter_options,
+            index=filter_options.index(st.session_state.main_filter),
+            key="main_filter_selectbox",
+            label_visibility="collapsed"
+        )
+        
+        # Mettre à jour le session_state
+        st.session_state.main_filter = selected_filter
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    return selected_filter
 
 # Fonction pour créer un badge HTML coloré selon le type de commande
 def get_order_type_badge(order_type):
@@ -731,17 +809,19 @@ def display_monthly_filter(merged_df):
         st.markdown('</div>', unsafe_allow_html=True)
         return
     
-    if 'selected_month' not in st.session_state:
+    # CORRECTION: Vérifier si le mois sélectionné existe encore après filtrage
+    if 'selected_month' not in st.session_state or st.session_state.selected_month not in months:
         st.session_state.selected_month = months[0]
     
     # Améliorer l'interface du sélecteur de mois
     st.markdown('<div class="month-selector">', unsafe_allow_html=True)
     st.markdown("##### Sélectionner un mois de disponibilité", unsafe_allow_html=True)
     selected_month = st.selectbox(
-        "", 
+        "Mois de disponibilité", 
         months, 
         index=months.index(st.session_state.selected_month),
-        format_func=lambda x: f"{x[:4]} - {MOIS_FR[int(x[5:7])]}"  # Formater l'affichage
+        format_func=lambda x: f"{x[:4]} - {MOIS_FR[int(x[5:7])]}",  # Formater l'affichage
+        label_visibility="collapsed"
     )
     st.markdown('</div>', unsafe_allow_html=True)
     st.session_state.selected_month = selected_month
@@ -1162,7 +1242,7 @@ def main():
             "Securoc": st.file_uploader("Fichier Securoc No Dispo", type=["xlsx"], key="securoc")
         }
 
-    # Le reste du code reste inchangé
+    # Le contenu principal avec le filtre
     if all(files.values()):
         if 'merged_df' not in st.session_state:
             with st.spinner("Traitement en cours..."):
@@ -1175,18 +1255,30 @@ def main():
         else:
             merged_df = st.session_state.merged_df
 
-        # Afficher les composants
-        create_order_metrics(merged_df)
-        display_dispo_charts(merged_df)
-        display_dispo_tables(merged_df)
-        display_monthly_filter(merged_df)
-        display_completed_orders(merged_df)
-        display_no_dispo_orders(merged_df)
+        # NOUVEAU: Afficher le filtre principal en haut à gauche
+        selected_filter = display_main_filter()
         
-        # Export
+        # NOUVEAU: Appliquer le filtre sur les données
+        filtered_df = apply_filter(merged_df, selected_filter)
+        
+        # Afficher un message informatif sur le filtre appliqué
+        if selected_filter != "Toutes les commandes":
+            total_commands_before = len(merged_df['Sales Document'].unique())
+            total_commands_after = len(filtered_df['Sales Document'].unique())
+            st.info(f"🔍 Filtre appliqué: **{selected_filter}** - {total_commands_after} commandes affichées sur {total_commands_before} au total")
+
+        # Afficher les composants avec les données filtrées
+        create_order_metrics(filtered_df)
+        display_dispo_charts(filtered_df)
+        display_dispo_tables(filtered_df)
+        display_monthly_filter(filtered_df)
+        display_completed_orders(filtered_df)
+        display_no_dispo_orders(filtered_df)
+        
+        # Export avec les données filtrées
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            merged_df.to_excel(writer, index=False, sheet_name='Données_Complètes')
+            filtered_df.to_excel(writer, index=False, sheet_name='Données_Complètes')
         
         st.sidebar.download_button(
             label="📥 Télécharger le rapport",
